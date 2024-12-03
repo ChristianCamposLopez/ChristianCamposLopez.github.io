@@ -1,0 +1,21 @@
+body{
+    background-image: url("./images.jpg");
+    background-size: 500px 550px;
+    background-repeat: repeat;
+    background-position:0px 0px;
+}
+canvas {
+    background-color: transparent;
+    border: 0px solid #000;
+    display: block;
+    margin: 20px auto;
+    position: relative; 
+    top: 330px; 
+    left: 0px;
+}
+.oswald-letra {
+    font-family: "Oswald", serif;
+    font-optical-sizing: auto;
+    font-weight: 20;
+    font-style: normal;
+  }

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./Style.css">
+</head>
+<body>
+    <canvas id="spriteCanvas" width="550" height="200"></canvas>
+
+    <script>
+        // Obtener el contexto del canvas
+        const canvas = document.getElementById("spriteCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Crear el objeto de imagen para el obstáculo
+        const Obs = new Image();
+        Obs.src = 'Obstaculo_Thornfield.webp';
+        // Crear el objeto de imagen para el dinosaurio
+        const img = new Image();
+        img.src = 'Icono_dino.webp'; //URL de la imagen
+        // Crear el objeto de imagen para la explocion
+        const exp = new Image();
+        exp.src = 'Icono_Rem.webp';
+
+        // Variables del juego
+        let ObsX = 500;
+        let Obsy;
+        let y = [150, 140, 130, 120, 110, 100, 100, 110, 120, 130, 140, 150];
+        let x = 220; // Posición X (fija)
+        let index = 0; // Índice inicial para controlar el cambio de posición Y
+        let cambios = 0; // Contador de cambios
+        let maxCambios = 33; // Número máximo de cambios
+        let intervaloDino; // Variable para almacenar el intervalo del dinosaurio
+        let intervaloObs; // Variable para almacenar el intervalo del obstáculo
+        let Ultima_Posicion_Dino_X; // Variable para almacenar el último valor de X del dinosaurio
+        let Ultima_Posicion_Dino_Y; // Variable para almacenar el último valor de Y del dinosaurio
+        
+        // Variables para el puntaje
+        let timeScore = 0;  // Puntaje que aumenta con el tiempo
+        let highScore = localStorage.getItem('Tiempo_Max') || 0; // Puntaje fijo, carga desde localStorage
+
+        // Cargar imagen del dinosaurio
+        img.onload = function () {
+            ctx.drawImage(img, x, y[index], 50, 50);
+            // Agregar el evento de la tecla presionada (espacio)
+            window.addEventListener("keydown", function (event) {
+                // Verificar si la tecla presionada es la barra espaciadora
+                if (event.code === "Space") {
+                    // Detener cualquier animación en curso del dinosaurio
+                    if (intervaloDino) {
+                        clearInterval(intervaloDino);
+                    }
+                    // Reiniciar variables antes de comenzar una nueva animación
+                    ctx.clearRect(x - 15, y[index], 70, 70);
+                    cambios = 0;
+                    x = 220; // Reiniciar la posición X del dinosaurio
+                    index = 0; // Reiniciar el índice Y
+                    // Iniciar la animación del dinosaurio
+                    iniciarAnimacionDino();
+                }
+            });
+        };
+
+        // Función para iniciar la animación del dinosaurio
+        function iniciarAnimacionDino() {
+            intervaloDino = setInterval(function () {
+                if (cambios >= 11) {
+                    if (cambios >= maxCambios) {
+                        clearInterval(intervaloDino); // Detiene el ciclo después de 5 cambios
+                        console.log("Se ha alcanzado el número máximo de cambios.");
+                    } else {
+                        x -= 5;
+                        ctx.clearRect(x - 15, y[index], 70, 70); // Limpiar canvas
+                        ctx.drawImage(img, x, y[index], 50, 50); // Dibujar dinosaurio
+                        Ultima_Posicion_Dino_X = x;
+                        Ultima_Posicion_Dino_Y = y[index];
+                        cambios++;
+                    }
+                } else {
+                    ctx.clearRect(x - 15, y[index - 1], 70, 70);
+                    // Cambiar al siguiente valor de Y
+                    index = (index + 1) % y.length;
+                    // Dibujar la imagen del dinosaurio
+                    ctx.drawImage(img, x, y[index], 50, 50);
+                    Ultima_Posicion_Dino_X = x;
+                    Ultima_Posicion_Dino_Y = y[index];
+
+                    x += 10;
+                    cambios++; // Incrementar el contador de cambios
+                }
+
+                // Verificar la colisión con el obstáculo
+                verificarColision();
+                // Actualizar el puntaje (segundo valor)
+                actualizarPuntaje();
+
+            }, 40);
+        }
+
+        // Cargar imagen del obstáculo
+        Obs.onload = function () {
+            // Iniciar la animación del obstáculo
+            intervaloObs = setInterval(function () {
+                if (ObsX >= -50) {
+                    ctx.clearRect(ObsX + 10, 175, 50, 50); // Limpiar canvas
+                    // Dibujar obstáculo
+                    ctx.drawImage(Obs, ObsX, 175, 50, 50); // Dibujar obstáculo
+                    timeScore++;
+                    ObsX -= 10; // Mover el obstáculo
+                } else {
+                    ObsX = 500; // Reiniciar la posición del obstáculo
+                }
+
+                // Verificar la colisión con el dinosaurio
+                verificarColision();             
+            }, 50);
+        };
+
+        // Función para verificar la colisión
+        function verificarColision() {
+            // Comprobar si las posiciones del dinosaurio y el obstáculo se superponen
+            if (Ultima_Posicion_Dino_X < ObsX + 30 && Ultima_Posicion_Dino_X + 30 > ObsX &&
+                Ultima_Posicion_Dino_Y < 175 + 50 && Ultima_Posicion_Dino_Y + 50 > 175) {
+                    ObsX = Ultima_Posicion_Dino_X;
+                    Obsy = Ultima_Posicion_Dino_Y;
+                    // Si hay colisión, detener ambas animaciones
+                    clearInterval(intervaloDino);
+                    clearInterval(intervaloObs);
+                    ctx.clearRect(Ultima_Posicion_Dino_X,Ultima_Posicion_Dino_Y,50,50);
+                    ctx.drawImage(exp, Ultima_Posicion_Dino_X,Ultima_Posicion_Dino_Y, 50, 50);
+                    console.log("¡Colisión detectada! Ambas animaciones se detienen.");
+                }
+        }
+
+        // Función para actualizar y mostrar el puntaje en el canvas
+        function actualizarPuntaje() {
+            // Limpiar la parte superior para redibujar el puntaje
+            ctx.clearRect(0, 0, canvas.width, 30);
+            
+            // Establecer el estilo del texto
+            ctx.font = "20px Oswald";
+            ctx.fillStyle = "blue";
+
+            // Actualizar el highScore si es necesario
+            if (timeScore > highScore) {
+                highScore = timeScore;
+                localStorage.setItem('Tiempo_Max', highScore); // Guardar el nuevo highScore
+            }
+            
+            localStorage.setItem('Tiempo_Total', timeScore);
+            ctx.fillText(`High Score: ${formatearNumero(highScore)} | Score: ${formatearNumero(timeScore)}`, 170, 20);
+        }
+
+        // Función para formatear el número a 4 dígitos (por ejemplo, 51 se muestra como 0051)
+        function formatearNumero(num) {
+            return num.toString().padStart(4, '0');
+        }
+
+    </script>
+</body>
+</html>
